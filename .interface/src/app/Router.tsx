@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
-import { AppShell } from "@/app/layout/AppShell"
+import { App } from "@/app/layout/App"
 
 import { HomePage } from "@/pages/home/HomePage"
 import { CompaniesPage } from "@/pages/companies/CompaniesPage"
@@ -22,7 +22,7 @@ export function Router() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<AppShell />}>
+        <Route element={<App />}>
           <Route index element={<HomePage />} />
 
           <Route path="companies" element={<CompaniesPage />} />

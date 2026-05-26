@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Outlet } from "react-router-dom"
 
 import { Sidebar } from "@/app/navigation/Sidebar"
-import { AppBreadcrumbs } from "@/app/layout/AppBreadcrumbs"
+import { Breadcrumbs } from "@/app/layout/Breadcrumbs"
 
 import "./app.css"
 
@@ -16,7 +16,7 @@ function readPersistedCollapsed(): boolean {
   }
 }
 
-export function AppShell() {
+export function App() {
   const [collapsed, setCollapsed] = useState<boolean>(readPersistedCollapsed)
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export function AppShell() {
       <Sidebar collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
       <div className="content">
         <header className="content-header">
-          <AppBreadcrumbs />
+          <Breadcrumbs />
         </header>
         <main className="content-body">
           <Outlet />

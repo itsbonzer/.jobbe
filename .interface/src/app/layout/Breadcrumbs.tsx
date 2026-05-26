@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { PATH_LABELS } from "@/app/navigation/routes"
 
-import "./app-breadcrumbs.css"
+import "./breadcrumbs.css"
 
 type Crumb = {
   path: string
@@ -33,12 +33,12 @@ function buildTrail(pathname: string): Crumb[] {
   return trail
 }
 
-export function AppBreadcrumbs() {
+export function Breadcrumbs() {
   const { pathname } = useLocation()
   const trail = buildTrail(pathname)
 
   return (
-    <Breadcrumb className="app-breadcrumbs">
+    <Breadcrumb className="breadcrumbs">
       <BreadcrumbList>
         {trail.map((crumb, index) => {
           const isLast = index === trail.length - 1
