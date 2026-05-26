@@ -20,7 +20,7 @@
    ------------------------------------------------------------
    These are needed so shadcn UI components compile with the
    correct color/radius/font scales. Do not reference these
-   directly from app code — use the CSS variables from §3.
+   directly from app code — use the CSS variables.
    ------------------------------------------------------------ */
 @theme inline {
     --font-sans: var(--font-inter), var(--font-noto-sans-jp), sans-serif;
@@ -84,14 +84,14 @@
     --font-noto-sans-jp: 'Noto Sans JP', sans-serif;
 }
 
-/* 3a. Light theme tokens
-   ------------------------------------------------------------ */
+/*------------------------Light----------------------------------*/
+
 :root {
     --radius: 0.625rem;
 
     /* Surfaces */
-    --background: rgb(255, 255, 255);
-    --foreground: rgb(8, 10, 12);
+    --background: #ffffff;
+    --foreground: #080a0c;
     --card: rgb(255, 255, 255);
     --card-foreground: rgb(8, 10, 12);
     --popover: rgb(255, 255, 255);
@@ -153,21 +153,39 @@
     --app-sidebar-width: 232px;
     --app-sidebar-width-collapsed: 80px;
 
-    /* Content frame (lighter bordered panel inside dark shell) */
-    --app-frame: rgb(255, 255, 255);
-    --app-frame-border: rgb(212, 217, 224);
+    /* Content  */
+    --content-body: #ffffff;
+    --content-body-border: #d4d9e0;
 }
 
-/* 3b. Dark theme tokens
-   ------------------------------------------------------------ */
+/*------------------------Dark----------------------------------*/
+
 .dark {
+    
+    /*----------Layout----------*/
+
+    /* Sidebar */
+    --sidebar: #11151a;
+    --sidebar-foreground: #edeff2;
+    --sidebar-primary: #2563f4;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #edeff20f;
+    --sidebar-accent-foreground: #edeff2;
+    --sidebar-border: #1f252c;
+    --sidebar-ring: #2563f4;
+
+    /* Content */
+    --background: #090a0b;
+    --content-body: #101213;
+    --content-body-border: #232931;    
+    --component-frame: #090a0b;
+
     /* Surfaces */
-    --background: #0c0f13;
     --foreground: #edeff2;
     --card: #14181e;
     --card-foreground: #edeff2;
     --popover: #14181e;
-    --popover-foreground: rgb(237, 239, 242);
+    --popover-foreground: #edeff2;
 
     /* Brand / interactive */
     --primary: #2563f4;
@@ -209,24 +227,10 @@
     --border: #232931;
     --input: #232931;
     --ring: rgb(37, 99, 244);
-
-    /* Sidebar */
-    --sidebar: #11151a;
-    --sidebar-foreground: #edeff2;
-    --sidebar-primary: #2563f4;
-    --sidebar-primary-foreground: rgb(255, 255, 255);
-    --sidebar-accent: rgba(237, 239, 242, 0.06);
-    --sidebar-accent-foreground: rgb(237, 239, 242);
-    --sidebar-border: #1f252c;
-    --sidebar-ring: rgb(37, 99, 244);
-
-    /* Content frame (lighter bordered panel inside dark shell) */
-    --app-frame: #0a0d11;
-    --app-frame-border: #1c2128;
 }
 
-/* 4. Base resets and app-wide defaults
-   ------------------------------------------------------------ */
+/*----------Base and defaults---------*/
+
 @layer base {
     * {
         @apply border-border outline-ring/50;
