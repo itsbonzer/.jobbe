@@ -1,0 +1,136 @@
+.jobs-page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.jobs-page-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.jobs-page-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.jobs-page-title {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.jobs-page-status {
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.jobs-page-status--loading {
+  color: var(--info-text);
+}
+
+.jobs-page-status--ready {
+  color: var(--success-text);
+}
+
+.jobs-page-status--empty {
+  color: var(--warning-text);
+}
+
+.jobs-page-status--error {
+  color: var(--destructive-text);
+}
+
+.jobs-grid-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.jobs-grid-toolbar {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.jobs-grid-toolbar-button {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.jobs-grid-toolbar-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.jobs-grid-toolbar-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.jobs-grid-toolbar-button:disabled:hover {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.jobs-grid-toolbar-button--danger {
+  border-color: color-mix(in srgb, var(--destructive-text) 40%, var(--border));
+  color: var(--destructive-text);
+}
+
+.jobs-grid-toolbar-button--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--destructive-text) 16%, transparent);
+  border-color: color-mix(in srgb, var(--destructive-text) 62%, var(--border));
+  color: var(--destructive-text);
+}
+
+.jobs-grid-toolbar-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.jobs-grid-toolbar-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.jobs-grid-frame {
+  flex: 1;
+  min-height: 420px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}

@@ -180,6 +180,12 @@
     --content-body-border: #232931;    
     --component-frame: #090a0b;
 
+    /*----------Components----------*/
+
+    --panel: #090a0b ;
+    --border: #232931;
+
+
     /* Surfaces */
     --foreground: #edeff2;
     --card: #14181e;
@@ -224,7 +230,7 @@
     --accent: rgba(237, 239, 242, 0.08);
     --accent-pressed: rgba(237, 239, 242, 0.14);
     --accent-foreground: rgb(237, 239, 242);
-    --border: #232931;
+    
     --input: #232931;
     --ring: rgb(37, 99, 244);
 }
