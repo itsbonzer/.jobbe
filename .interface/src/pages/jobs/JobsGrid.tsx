@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ArrowClockwiseIcon,
+  BoxOutArrowUpIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   DocCsvIcon,
   DocXlsxIcon,
   FilterIcon,
@@ -13,6 +16,8 @@ import type {
   GridPreDestroyedEvent,
   GridReadyEvent,
   GetRowIdParams,
+  ICellRendererParams,
+  RowClickedEvent,
   SetFilterValuesFuncParams,
   SideBarDef,
   StateUpdatedEvent,
@@ -37,6 +42,7 @@ import {
   type JobRow,
   type JobsGridRow,
 } from "./types"
+import { JobDetailsPanel } from "./JobDetailsPanel"
 
 export type JobsGridState = {
   isLoading: boolean
@@ -93,6 +99,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
   const [gridState, setGridState] = useState<JobsGridState>(INITIAL_STATE)
   const [selectedLeafCount, setSelectedLeafCount] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [detailsJob, setDetailsJob] = useState<JobRow | null>(null)
 
   const updateGridState = useCallback((nextState: Partial<JobsGridState>) => {
     setGridState((prev) => ({
@@ -174,6 +181,27 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
           headerName: "Job Title",
           minWidth: 180,
           width: 260,
+        },
+        {
+          field: "job_description",
+          headerName: "Description",
+          minWidth: 180,
+          width: 360,
+          cellRenderer: (
+            params: ICellRendererParams<JobsGridRow, string | null>,
+          ) => {
+            const job = params.data
+            if (!job || isGroupRow(job)) {
+              return null
+            }
+
+            const description = params.value?.trim() || "No description"
+            return (
+              <span className="jobs-grid-description-text" title={description}>
+                {description}
+              </span>
+            )
+          },
         },
         {
           field: "location",
@@ -261,6 +289,38 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
           ...setFilter("ats"),
         },
         {
+          colId: "apply_action",
+          headerName: "Apply",
+          editable: false,
+          sortable: false,
+          filter: false,
+          minWidth: 95,
+          width: 115,
+          cellRenderer: (
+            params: ICellRendererParams<JobsGridRow, string | null>,
+          ) => {
+            const job = params.data
+            if (!job || isGroupRow(job)) {
+              return null
+            }
+
+            return (
+              <button
+                type="button"
+                className="jobs-grid-cell-button jobs-grid-apply-button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  openJobPost(job.job_url)
+                }}
+                title="Open original job post"
+              >
+                <BoxOutArrowUpIcon aria-hidden="true" />
+                <span>Apply</span>
+              </button>
+            )
+          },
+        },
+        {
           field: "job_url",
           headerName: "Job URL",
           editable: false,
@@ -320,6 +380,15 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
     setSelectedLeafCount(selectedRows.filter(isJobRow).length)
   }, [])
 
+  const handleRowClicked = useCallback((event: RowClickedEvent<JobsGridRow>) => {
+    const row = event.data
+    if (!row || isGroupRow(row)) {
+      return
+    }
+
+    setDetailsJob(row)
+  }, [])
+
   const handleCellValueChanged = useCallback(
     async (event: CellValueChangedEvent<JobsGridRow>) => {
       if (isRevertingCellRef.current) {
@@ -364,6 +433,14 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
     setSelectedLeafCount(0)
     updateGridState({ isLoading: true, error: null })
     gridRef.current?.api.refreshServerSide({ purge: true })
+  }
+
+  const handleExpandAll = () => {
+    gridRef.current?.api.expandAll()
+  }
+
+  const handleCollapseAll = () => {
+    gridRef.current?.api.collapseAll()
   }
 
   const handleGridReady = (event: GridReadyEvent<JobsGridRow>) => {
@@ -476,6 +553,26 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
         <div className="jobs-grid-toolbar">
           <button
             type="button"
+            className="jobs-grid-toolbar-button"
+            onClick={handleExpandAll}
+            aria-label="Expand all company groups"
+            title="Expand all company groups"
+          >
+            <ChevronDownIcon aria-hidden="true" />
+            <span>Expand</span>
+          </button>
+          <button
+            type="button"
+            className="jobs-grid-toolbar-button"
+            onClick={handleCollapseAll}
+            aria-label="Collapse all company groups"
+            title="Collapse all company groups"
+          >
+            <ChevronUpIcon aria-hidden="true" />
+            <span>Collapse</span>
+          </button>
+          <button
+            type="button"
             className="jobs-grid-toolbar-button jobs-grid-toolbar-button--danger"
             onClick={handleDeleteSelected}
             disabled={selectedLeafCount === 0 || isDeleting}
@@ -553,6 +650,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
             sideBar={sideBar}
             groupDisplayType="singleColumn"
             groupDefaultExpanded={0}
+            showOpenedGroup={true}
             rowGroupPanelShow="always"
             rowSelection={{ mode: "multiRow" }}
             isRowSelectable={(node) =>
@@ -562,6 +660,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
             onStateUpdated={handleStateUpdated}
             onGridPreDestroyed={handleGridPreDestroyed}
             onSelectionChanged={handleSelectionChanged}
+            onRowClicked={handleRowClicked}
             onCellValueChanged={handleCellValueChanged}
             pagination={true}
             paginationPageSize={100}
@@ -570,9 +669,18 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
             suppressAggFuncInHeader={true}
           />
         </div>
+
+        <JobDetailsPanel job={detailsJob} onClose={() => setDetailsJob(null)} />
       </div>
     </AgGridProvider>
   )
+}
+
+function openJobPost(jobUrl: string): void {
+  const nextWindow = window.open(jobUrl, "_blank", "noopener,noreferrer")
+  if (nextWindow) {
+    nextWindow.opener = null
+  }
 }
 
 function formatNullableValue(

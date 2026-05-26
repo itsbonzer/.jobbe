@@ -13,7 +13,7 @@ export type GridStateLoadResult = {
   warning: string | null
 }
 
-const GRID_STATE_KEY = "jobs:jobs"
+const GRID_STATE_KEY = "jobs:find"
 
 export const DEFAULT_JOBS_GRID_STATE: GridState = {
   rowGroup: {
