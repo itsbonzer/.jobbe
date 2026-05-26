@@ -1,0 +1,10 @@
+/* ── Breadcrumbs ── */
+
+.app-breadcrumbs {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.app-breadcrumbs a {
+  text-decoration: none;
+}

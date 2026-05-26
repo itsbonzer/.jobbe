@@ -1,3 +1,14 @@
+/* ============================================================
+   Jobbe — global styles
+   ------------------------------------------------------------
+   1. Tailwind + font imports (kept for shadcn UI components)
+   2. Tailwind @theme tokens (consumed by shadcn UI only)
+   3. Color tokens — :root (light) and .dark
+   4. Base resets and app-wide defaults (plain CSS)
+   ============================================================ */
+
+/* 1. Imports
+   ------------------------------------------------------------ */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@fontsource-variable/inter";
@@ -5,6 +16,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* 2. Tailwind @theme tokens
+   ------------------------------------------------------------
+   These are needed so shadcn UI components compile with the
+   correct color/radius/font scales. Do not reference these
+   directly from app code — use the CSS variables from §3.
+   ------------------------------------------------------------ */
 @theme inline {
     --font-sans: var(--font-inter), var(--font-noto-sans-jp), sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
@@ -67,14 +84,20 @@
     --font-noto-sans-jp: 'Noto Sans JP', sans-serif;
 }
 
+/* 3a. Light theme tokens
+   ------------------------------------------------------------ */
 :root {
     --radius: 0.625rem;
+
+    /* Surfaces */
     --background: rgb(255, 255, 255);
     --foreground: rgb(8, 10, 12);
     --card: rgb(255, 255, 255);
     --card-foreground: rgb(8, 10, 12);
     --popover: rgb(255, 255, 255);
     --popover-foreground: rgb(8, 10, 12);
+
+    /* Brand / interactive */
     --primary: rgb(37, 99, 244);
     --primary-hovered: rgb(58, 114, 245);
     --primary-pressed: rgb(81, 130, 246);
@@ -84,6 +107,8 @@
     --secondary-hovered: rgba(103, 120, 145, 0.2);
     --secondary-pressed: rgba(103, 120, 145, 0.3);
     --secondary-foreground: rgb(8, 10, 12);
+
+    /* Status */
     --destructive: rgb(245, 20, 10);
     --destructive-hovered: rgb(246, 55, 47);
     --destructive-pressed: rgb(247, 90, 83);
@@ -102,6 +127,8 @@
     --warning-foreground: rgb(8, 10, 12);
     --warning-text: rgb(179, 130, 0);
     --warning-muted: rgb(254, 246, 224);
+
+    /* Subdued */
     --muted: rgb(237, 239, 242);
     --muted-foreground: rgb(103, 120, 145);
     --accent: rgba(103, 120, 145, 0.1);
@@ -110,6 +137,8 @@
     --border: rgb(212, 217, 224);
     --input: rgb(212, 217, 224);
     --ring: rgb(37, 99, 244);
+
+    /* Sidebar */
     --sidebar: rgb(249, 250, 251);
     --sidebar-foreground: rgb(8, 10, 12);
     --sidebar-primary: rgb(37, 99, 244);
@@ -118,24 +147,40 @@
     --sidebar-accent-foreground: rgb(8, 10, 12);
     --sidebar-border: rgb(212, 217, 224);
     --sidebar-ring: rgb(37, 99, 244);
+
+    /* App shell layout */
+    --app-header-height: 48px;
+    --app-sidebar-width: 232px;
+    --app-sidebar-width-collapsed: 80px;
+
+    /* Content frame (lighter bordered panel inside dark shell) */
+    --app-frame: rgb(255, 255, 255);
+    --app-frame-border: rgb(212, 217, 224);
 }
 
+/* 3b. Dark theme tokens
+   ------------------------------------------------------------ */
 .dark {
-    --background: #101317;
+    /* Surfaces */
+    --background: #0c0f13;
     --foreground: #edeff2;
-    --card: #101317;
+    --card: #14181e;
     --card-foreground: #edeff2;
-    --popover: rgb(16, 19, 23);
+    --popover: #14181e;
     --popover-foreground: rgb(237, 239, 242);
+
+    /* Brand / interactive */
     --primary: #2563f4;
     --primary-hovered: #3a72f5;
     --primary-pressed: #5182f6;
     --primary-foreground: rgb(255, 255, 255);
     --primary-text: rgb(76, 127, 246);
     --secondary: rgba(237, 239, 242, 0.08);
-    --secondary-hovered: #edeff229;
-    --secondary-pressed: #edeff23d;
+    --secondary-hovered: rgba(237, 239, 242, 0.16);
+    --secondary-pressed: rgba(237, 239, 242, 0.24);
     --secondary-foreground: #edeff2;
+
+    /* Status */
     --destructive: rgb(247, 62, 54);
     --destructive-hovered: rgb(248, 91, 84);
     --destructive-pressed: rgb(249, 120, 114);
@@ -154,32 +199,63 @@
     --warning-foreground: rgb(8, 10, 12);
     --warning-text: rgb(249, 181, 0);
     --warning-muted: rgb(75, 54, 0);
-    --muted: rgb(31, 36, 44);
+
+    /* Subdued */
+    --muted: #1a1f26;
     --muted-foreground: rgb(130, 144, 165);
-    --accent: #edeff214;
-    --accent-pressed: rgba(237, 239, 242, 0.16);
+    --accent: rgba(237, 239, 242, 0.08);
+    --accent-pressed: rgba(237, 239, 242, 0.14);
     --accent-foreground: rgb(237, 239, 242);
-    --border: rgb(45, 53, 64);
-    --input: rgb(45, 53, 64);
+    --border: #232931;
+    --input: #232931;
     --ring: rgb(37, 99, 244);
-    --sidebar: rgb(31, 36, 44);
-    --sidebar-foreground: rgb(237, 239, 242);
+
+    /* Sidebar */
+    --sidebar: #11151a;
+    --sidebar-foreground: #edeff2;
     --sidebar-primary: #2563f4;
     --sidebar-primary-foreground: rgb(255, 255, 255);
-    --sidebar-accent: rgba(237, 239, 242, 0.08);
+    --sidebar-accent: rgba(237, 239, 242, 0.06);
     --sidebar-accent-foreground: rgb(237, 239, 242);
-    --sidebar-border: rgb(45, 53, 64);
+    --sidebar-border: #1f252c;
     --sidebar-ring: rgb(37, 99, 244);
+
+    /* Content frame (lighter bordered panel inside dark shell) */
+    --app-frame: #0a0d11;
+    --app-frame-border: #1c2128;
 }
 
+/* 4. Base resets and app-wide defaults
+   ------------------------------------------------------------ */
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+    * {
+        @apply border-border outline-ring/50;
     }
-  body {
-    @apply bg-background text-foreground;
+
+    button:not(:disabled),
+    [role="button"]:not(:disabled) {
+        cursor: pointer;
     }
-  button:not(:disabled), [role="button"]:not(:disabled) {
-    cursor: pointer;
-    }
+}
+
+html,
+body,
+#root {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-inter), var(--font-noto-sans-jp), sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+img {
+    display: block;
+    max-width: 100%;
 }
