@@ -1,8 +1,8 @@
 import { useState } from "react"
 
-import { JobsGrid, type JobsGridState } from "../JobsGrid"
+import { JobsGrid, type JobsGridState } from "./JobsGrid"
 
-import "../jobs.css"
+import "./jobs.css"
 
 export function FindPage() {
   const [gridState, setGridState] = useState<JobsGridState>({
