@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .companies.routes import router as companies_router
 from .jobs.routes import router as jobs_router
 from .preferences.routes import router as preferences_router
 
@@ -17,6 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(companies_router)
 app.include_router(jobs_router)
 app.include_router(preferences_router)
 

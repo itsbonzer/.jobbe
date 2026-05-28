@@ -5,7 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, field_validator
 
 
-PreferenceScope = Literal["grid"]
+PreferenceScope = Literal["grid", "companies"]
 
 
 class PreferenceRecord(BaseModel):

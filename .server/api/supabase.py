@@ -71,6 +71,43 @@ def call_rpc(function_name: str, body: dict[str, Any]) -> Any:
     )
 
 
+def select_rows(
+    path: str,
+    *,
+    range_start: int | None = None,
+    range_end: int | None = None,
+) -> list[dict[str, Any]]:
+    config = get_required_supabase_config()
+    normalized_path = path if path.startswith("/") else f"/{path}"
+    extra_headers = None
+    if range_start is not None or range_end is not None:
+        if range_start is None or range_end is None:
+            raise ValueError("Both range_start and range_end are required.")
+        extra_headers = {
+            "Range": f"{range_start}-{range_end}",
+            "Range-Unit": "items",
+        }
+
+    payload = _send_json_request(
+        config=config,
+        method="GET",
+        path=normalized_path,
+        body=None,
+        extra_headers=extra_headers,
+    )
+
+    if not isinstance(payload, list):
+        raise SupabaseApiError("Supabase returned an unexpected select payload.")
+
+    rows: list[dict[str, Any]] = []
+    for row in payload:
+        if not isinstance(row, dict):
+            raise SupabaseApiError("Supabase returned an invalid select row.")
+        rows.append(row)
+
+    return rows
+
+
 def patch_table_row(
     table_name: str,
     key_column: str,
