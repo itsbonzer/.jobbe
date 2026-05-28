@@ -90,8 +90,6 @@
 
 }
 
-/*------------------------Light----------------------------------*/
-
 :root {
     --radius: 0.625rem;
 
@@ -162,7 +160,7 @@
     
     /*----------Layout----------*/
 
-    --sidebar: #11151a;
+    --sidebar: #090a0b;
     --sidebar-foreground: #edeff2;
     --sidebar-primary: #2563f4;
     --sidebar-primary-foreground: #ffffff;
@@ -174,33 +172,33 @@
     --background: #090a0b;
     --content-body: #101317;
     --content-body-border: #232931;    
-    --component-frame: #090a0b;
+    --frame: #090a0b;
 
-    /*----------Components----------*/
 
     --panel: #090a0b ;
     --border: #232931;
 
 
-    /* Surfaces */
+    
+    --card: #0C0D0F;
     --foreground: #edeff2;
-    --card: #14181e;
     --card-foreground: #edeff2;
-    --popover: #14181e;
-    --popover-foreground: #edeff2;
 
-    /* Brand / interactive */
+
+
     --primary: #2563f4;
     --primary-hovered: #3a72f5;
     --primary-pressed: #5182f6;
-    --primary-foreground: rgb(255, 255, 255);
-    --primary-text: rgb(76, 127, 246);
-    --secondary: rgba(237, 239, 242, 0.08);
-    --secondary-hovered: rgba(237, 239, 242, 0.16);
-    --secondary-pressed: rgba(237, 239, 242, 0.24);
+    --primary-foreground: #e7e8e9;
+    --primary-text: #e9ebec;
+    --secondary: #edeff214;
+    --secondary-hovered: #edeff229;
+    --secondary-pressed: #edeff23d;
     --secondary-foreground: #edeff2;
 
-    /* Status */
+    --popover: #14181e;
+    --popover-foreground: #edeff2;
+
     --destructive: rgb(247, 62, 54);
     --destructive-hovered: rgb(248, 91, 84);
     --destructive-pressed: rgb(249, 120, 114);
@@ -220,7 +218,6 @@
     --warning-text: rgb(249, 181, 0);
     --warning-muted: rgb(75, 54, 0);
 
-    /* Subdued */
     --muted: #1a1f26;
     --muted-foreground: #8290a5;
     --accent: #edeff214;

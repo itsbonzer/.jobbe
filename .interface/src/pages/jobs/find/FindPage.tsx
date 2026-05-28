@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { JobsGrid, type JobsGridState } from "./JobsGrid"
 
-import "./jobs.css"
+import "./find.css"
 
 export function FindPage() {
   const [gridState, setGridState] = useState<JobsGridState>({
@@ -27,12 +27,12 @@ export function FindPage() {
         : "ready"
 
   return (
-    <section className="jobs-page">
-      <header className="jobs-page-header">
-        <div className="jobs-page-title-group">
-          <h1 className="jobs-page-title">Find</h1>
+    <section className="find-page">
+      <header className="find-page-header">
+        <div className="find-page-title-group">
+          <h1 className="find-page-title">Find</h1>
           <span
-            className={`jobs-page-status jobs-page-status--${statusTone}`}
+            className={`find-page-status find-page-status--${statusTone}`}
             aria-live="polite"
           >
             {statusText}
