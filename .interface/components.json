@@ -20,6 +20,7 @@
     "hooks": "@/hooks"
   },
   "registries": {
-    "@exabase": "https://exawizards.com/exabase/design/registry/{name}.json"
+    "@exabase": "https://exawizards.com/exabase/design/registry/{name}.json",
+    "@platejs": "https://platejs.org/r/{name}.json"
   }
 }

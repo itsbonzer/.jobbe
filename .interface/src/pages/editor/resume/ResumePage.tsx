@@ -1,3 +1,6 @@
+import { ResumeEditor } from "./ResumeEditor"
+import "./resume.css"
+
 export function ResumePage() {
-  return null
+  return <ResumeEditor />
 }

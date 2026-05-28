@@ -1,0 +1,498 @@
+.resume-editor-page {
+  --resume-panel-bg: #161a20;
+  --resume-panel-border: rgb(255 255 255 / 0.06);
+  --resume-surface: #0f1217;
+  --resume-surface-raised: #1b2028;
+  --resume-surface-hover: rgb(255 255 255 / 0.04);
+  --resume-text: rgb(255 255 255 / 0.9);
+  --resume-muted: rgb(255 255 255 / 0.62);
+  --resume-dim: rgb(255 255 255 / 0.38);
+  --resume-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.25);
+
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.resume-editor-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.resume-editor-title-group {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.resume-editor-title {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.resume-editor-status {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resume-editor-workspace {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  grid-template-columns: minmax(15rem, 0.78fr) minmax(42rem, 1.45fr);
+  gap: 1rem;
+}
+
+.resume-editor-side-space {
+  min-height: 0;
+}
+
+.resume-editor-shell {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--resume-panel-border);
+  border-radius: 8px;
+  background: var(--resume-panel-bg);
+  box-shadow: var(--resume-shadow);
+}
+
+.resume-editor-topbar {
+  display: flex;
+  min-width: 0;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem;
+  border-bottom: 1px solid var(--resume-panel-border);
+  background: #12161c;
+}
+
+.resume-editor-toolbar,
+.resume-editor-actions,
+.resume-editor-control-group,
+.resume-editor-size-group {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.resume-editor-toolbar {
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.resume-editor-actions {
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.resume-editor-control-group {
+  gap: 0.25rem;
+  padding-right: 0.45rem;
+  border-right: 1px solid var(--resume-panel-border);
+}
+
+.resume-editor-control-group:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.resume-editor-file-input,
+.resume-editor-color-input {
+  display: none;
+}
+
+.resume-editor-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.resume-editor-field {
+  display: inline-flex;
+  height: 2rem;
+  min-width: 0;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 7px;
+  background: var(--resume-surface-raised);
+}
+
+.resume-editor-field-label {
+  flex-shrink: 0;
+  padding: 0 0.55rem;
+  color: var(--resume-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.resume-editor-select {
+  height: 2rem;
+  min-width: 0;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 7px;
+  background: var(--resume-surface-raised);
+  color: var(--resume-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.resume-editor-block-select {
+  width: 8.25rem;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+  background: #202632;
+}
+
+.resume-editor-compact-select {
+  width: 3.6rem;
+  padding: 0 0.35rem;
+}
+
+.resume-editor-icon-select {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  gap: 0.15rem;
+  padding-left: 0.45rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 7px;
+  background: var(--resume-surface);
+  color: var(--resume-muted);
+}
+
+.resume-editor-icon-select .resume-editor-select {
+  height: calc(2rem - 2px);
+  border: 0;
+  background: transparent;
+}
+
+.resume-editor-select:hover,
+.resume-editor-field:hover {
+  border-color: rgb(255 255 255 / 0.16);
+}
+
+.resume-editor-select:focus-visible,
+.resume-editor-button:focus-visible,
+.resume-editor-tool:focus-visible,
+.resume-editor-color-control:focus-within {
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent);
+}
+
+.resume-editor-select option {
+  background: #202632;
+  color: var(--resume-text);
+}
+
+.resume-editor-button,
+.resume-editor-tool,
+.resume-editor-color-control,
+.resume-editor-size-value {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 7px;
+  background: var(--resume-surface);
+  color: var(--resume-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.resume-editor-button {
+  gap: 0.375rem;
+  padding: 0 0.625rem;
+  white-space: nowrap;
+}
+
+.resume-editor-tool {
+  min-width: 2rem;
+  padding: 0 0.45rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.resume-editor-tool svg,
+.resume-editor-button svg,
+.resume-editor-color-control svg,
+.resume-editor-icon-select svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+  stroke-width: 1.9;
+}
+
+.resume-editor-tool[data-active="true"] {
+  border-color: color-mix(in srgb, var(--primary) 62%, transparent);
+  background: color-mix(in srgb, var(--primary) 22%, #151a22);
+  color: #ffffff;
+}
+
+.resume-editor-button:hover,
+.resume-editor-tool:hover,
+.resume-editor-color-control:hover {
+  border-color: rgb(255 255 255 / 0.16);
+  background: var(--resume-surface-hover);
+  color: #ffffff;
+}
+
+.resume-editor-button-primary {
+  border-color: color-mix(in srgb, var(--primary) 65%, transparent);
+  background: color-mix(in srgb, var(--primary) 28%, #151a22);
+  color: var(--primary-foreground);
+}
+
+.resume-editor-button-primary:hover {
+  border-color: color-mix(in srgb, var(--primary) 82%, #ffffff);
+  background: color-mix(in srgb, var(--primary) 38%, #151a22);
+  color: var(--primary-foreground);
+}
+
+.resume-editor-size-group {
+  gap: 0.2rem;
+}
+
+.resume-editor-size-value {
+  min-width: 2.25rem;
+  background: #202632;
+  color: var(--resume-muted);
+  font-weight: 650;
+}
+
+.resume-editor-color-control {
+  position: relative;
+  gap: 0.35rem;
+  min-width: 2.25rem;
+  padding: 0 0.45rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.resume-editor-color-swatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex-shrink: 0;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
+}
+
+.resume-editor-document-frame {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  justify-content: center;
+  overflow: auto;
+  background: #0b0e12;
+  padding: 1.125rem;
+  scrollbar-width: thin;
+  scrollbar-color: #5b6572 transparent;
+}
+
+.resume-editor-document-frame::-webkit-scrollbar {
+  width: 8px;
+}
+
+.resume-editor-document-frame::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.resume-editor-document-frame::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #5b6572;
+}
+
+.resume-editor-document {
+  width: min(100%, 50rem);
+  min-height: 66rem;
+  margin: 0 auto;
+  padding: 3.1rem 3.9rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 6px;
+  background: #11161d;
+  box-shadow:
+    0 22px 44px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.04);
+  color: #e8edf4;
+  font-family: Calibri, Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.28;
+  outline: none;
+}
+
+.resume-editor-document:focus-visible {
+  outline: none;
+}
+
+.resume-editor-document p {
+  margin: 0 0 0.32rem;
+}
+
+.resume-editor-document a {
+  color: #7fb3ff;
+  text-decoration: underline;
+  text-underline-offset: 0.12rem;
+}
+
+.resume-editor-document ul,
+.resume-editor-document ol {
+  margin: 0 0 0.65rem;
+  padding-left: 1.35rem;
+}
+
+.resume-editor-document li {
+  margin: 0.1rem 0;
+}
+
+.resume-editor-heading-one {
+  margin: 0 0 0.65rem;
+  color: #ffffff;
+  font-size: 16pt;
+  font-weight: 400;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.resume-editor-heading-one + p {
+  margin: 0 0 1.05rem;
+  color: rgb(255 255 255 / 0.78);
+  font-size: 6.8pt;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.resume-editor-heading-two {
+  margin: 1.1rem 0 0.5rem;
+  padding-bottom: 0.34rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.34);
+  color: #ffffff;
+  font-size: 8.8pt;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.resume-editor-heading-three,
+.resume-editor-heading-four,
+.resume-editor-heading-five,
+.resume-editor-heading-six {
+  color: #f5f7fb;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.resume-editor-heading-three {
+  margin: 0.72rem 0 0.12rem;
+  color: #86b7f5;
+  font-size: 7.8pt;
+}
+
+.resume-editor-heading-four {
+  margin: 0.65rem 0 0.2rem;
+  font-size: 7.6pt;
+}
+
+.resume-editor-heading-five,
+.resume-editor-heading-six {
+  margin: 0.5rem 0 0.15rem;
+  font-size: 7.4pt;
+}
+
+.resume-editor-quote {
+  margin: 0.75rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid rgb(255 255 255 / 0.22);
+  color: rgb(255 255 255 / 0.72);
+}
+
+.resume-editor-toggle {
+  margin: 0.45rem 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.035);
+}
+
+.resume-editor-horizontal-rule {
+  margin: 0.35rem 0 1.05rem;
+  padding: 0.35rem 0;
+}
+
+.resume-editor-horizontal-rule-line {
+  height: 1px;
+  background: rgb(255 255 255 / 0.28);
+}
+
+@media (max-width: 1180px) {
+  .resume-editor-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .resume-editor-side-space {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .resume-editor-header,
+  .resume-editor-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .resume-editor-actions,
+  .resume-editor-toolbar {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .resume-editor-control-group {
+    border-right: 0;
+  }
+
+  .resume-editor-document-frame {
+    padding: 0.75rem;
+  }
+
+  .resume-editor-document {
+    min-height: 48rem;
+    padding: 2rem;
+  }
+}
