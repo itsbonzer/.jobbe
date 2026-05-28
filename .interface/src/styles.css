@@ -141,7 +141,7 @@
     /* Sidebar */
     --sidebar: rgb(249, 250, 251);
     --sidebar-foreground: rgb(8, 10, 12);
-    --sidebar-primary: rgb(37, 99, 244);
+    --sidebar-primary: #2563f4;
     --sidebar-primary-foreground: rgb(255, 255, 255);
     --sidebar-accent: #afcbf0;
     --sidebar-accent-foreground: rgb(8, 10, 12);
