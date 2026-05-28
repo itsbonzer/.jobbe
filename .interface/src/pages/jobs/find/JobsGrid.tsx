@@ -28,6 +28,8 @@ import { colorSchemeDark, themeQuartz } from "ag-grid-community"
 import { AllEnterpriseModule } from "ag-grid-enterprise"
 import { AgGridProvider, AgGridReact } from "ag-grid-react"
 
+import { Button } from "@/components/ui/button"
+
 import { createJobsDatasource } from "./createJobsDatasource"
 import {
   DEFAULT_JOBS_GRID_STATE,
@@ -82,12 +84,12 @@ const NULLABLE_TEXT_FIELDS = new Set<keyof JobRow>([
 
 const jobsGridTheme = themeQuartz.withPart(colorSchemeDark).withParams({
   backgroundColor: "#101317",
-  dataBackgroundColor: "#101317",
+  dataBackgroundColor: "#1a1f25",
   chromeBackgroundColor: "#090a0b",
   headerBackgroundColor: "#090a0b",
-  oddRowBackgroundColor: "#0c0f13",
+  oddRowBackgroundColor: "#1a1f25",
   borderColor: "#232931",
-  rowHoverColor: "#18202a",
+  rowHoverColor: "#272d35",
   browserColorScheme: "dark",
 })
 
@@ -551,29 +553,71 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
     <AgGridProvider modules={[AllEnterpriseModule]}>
       <div className="jobs-grid-shell">
         <div className="jobs-grid-toolbar">
-          <button
-            type="button"
-            className="jobs-grid-toolbar-button"
+          <Button
+            variant="outline"
             onClick={handleExpandAll}
             aria-label="Expand all company groups"
             title="Expand all company groups"
           >
             <ChevronDownIcon aria-hidden="true" />
             <span>Expand</span>
-          </button>
-          <button
-            type="button"
-            className="jobs-grid-toolbar-button"
+          </Button>
+          <Button
+            variant="outline"
             onClick={handleCollapseAll}
             aria-label="Collapse all company groups"
             title="Collapse all company groups"
           >
             <ChevronUpIcon aria-hidden="true" />
             <span>Collapse</span>
-          </button>
-          <button
-            type="button"
-            className="jobs-grid-toolbar-button jobs-grid-toolbar-button--danger"
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            aria-label="Refresh jobs"
+            title="Refresh jobs"
+          >
+            <ArrowClockwiseIcon aria-hidden="true" />
+            <span>Refresh</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleToggleToolPanel("columns")}
+            aria-label="Show columns"
+            title="Show columns"
+          >
+            <TableIcon aria-hidden="true" />
+            <span>Columns</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleToggleToolPanel("filters")}
+            aria-label="Show filters"
+            title="Show filters"
+          >
+            <FilterIcon aria-hidden="true" />
+            <span>Filters</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportCsv}
+            aria-label="Export CSV"
+            title="Export CSV"
+          >
+            <DocCsvIcon aria-hidden="true" />
+            <span>CSV</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportExcel}
+            aria-label="Export Excel"
+            title="Export Excel"
+          >
+            <DocXlsxIcon aria-hidden="true" />
+            <span>Excel</span>
+          </Button>
+          <Button
+            variant="destructive-outline"
             onClick={handleDeleteSelected}
             disabled={selectedLeafCount === 0 || isDeleting}
             aria-label="Delete selected jobs"
@@ -583,57 +627,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
             <span>
               {selectedLeafCount > 0 ? `Delete (${selectedLeafCount})` : "Delete"}
             </span>
-          </button>
-          <button
-            type="button"
-            className="jobs-grid-toolbar-button"
-            onClick={handleRefresh}
-            aria-label="Refresh jobs"
-            title="Refresh jobs"
-          >
-            <ArrowClockwiseIcon aria-hidden="true" />
-            <span>Refresh</span>
-          </button>
-          <button
-            type="button"
-            className="jobs-grid-toolbar-button"
-            onClick={() => handleToggleToolPanel("columns")}
-            aria-label="Show columns"
-            title="Show columns"
-          >
-            <TableIcon aria-hidden="true" />
-            <span>Columns</span>
-          </button>
-          <button
-            type="button"
-            className="jobs-grid-toolbar-button"
-            onClick={() => handleToggleToolPanel("filters")}
-            aria-label="Show filters"
-            title="Show filters"
-          >
-            <FilterIcon aria-hidden="true" />
-            <span>Filters</span>
-          </button>
-          <button
-            type="button"
-            className="jobs-grid-toolbar-button"
-            onClick={handleExportCsv}
-            aria-label="Export CSV"
-            title="Export CSV"
-          >
-            <DocCsvIcon aria-hidden="true" />
-            <span>CSV</span>
-          </button>
-          <button
-            type="button"
-            className="jobs-grid-toolbar-button"
-            onClick={handleExportExcel}
-            aria-label="Export Excel"
-            title="Export Excel"
-          >
-            <DocXlsxIcon aria-hidden="true" />
-            <span>Excel</span>
-          </button>
+          </Button>
         </div>
 
         <div className="jobs-grid-frame">

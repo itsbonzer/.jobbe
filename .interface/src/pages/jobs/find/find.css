@@ -30,28 +30,6 @@
   line-height: 1.2;
 }
 
-.find-page-status {
-  color: var(--muted-foreground);
-  font-size: 0.8125rem;
-  line-height: 1.2;
-}
-
-.find-page-status--loading {
-  color: var(--info-text);
-}
-
-.find-page-status--ready {
-  color: var(--success-text);
-}
-
-.find-page-status--empty {
-  color: var(--warning-text);
-}
-
-.find-page-status--error {
-  color: var(--destructive-text);
-}
-
 .jobs-grid-shell {
   display: flex;
   flex: 1;
@@ -186,6 +164,14 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.jobs-grid-frame .ag-row.ag-row-group {
+  background-color: #101317;
+}
+
+.jobs-grid-frame .ag-row:not(.ag-row-group) {
+  background-color: #1a1f25;
 }
 
 .jobs-details-drawer {
