@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react"
-import type { SlateEditor, Value } from "platejs"
+import { createElement, useEffect, useRef, useState } from "react"
+import { KEYS, type SlateEditor, type TElement, type Value } from "platejs"
 import {
   BlockquotePlugin,
   BoldPlugin,
@@ -21,8 +21,12 @@ import {
   TextAlignPlugin,
 } from "@platejs/basic-styles/react"
 import { IndentPlugin } from "@platejs/indent/react"
-import { indentList, indentTodo, outdentList, toggleList } from "@platejs/list"
-import { ListPlugin } from "@platejs/list/react"
+import { indentList, isOrderedList, outdentList, toggleList } from "@platejs/list"
+import {
+  ListPlugin,
+  useTodoListElement,
+  useTodoListElementState,
+} from "@platejs/list/react"
 import { LinkPlugin, triggerFloatingLinkInsert } from "@platejs/link/react"
 import { TogglePlugin, openNextToggles } from "@platejs/toggle/react"
 import {
@@ -30,7 +34,7 @@ import {
   AlignJustify,
   AlignLeft,
   AlignRight,
-  Baseline,
+  ArrowDownAZ,
   Bold,
   Download,
   Highlighter,
@@ -39,9 +43,9 @@ import {
   Italic,
   Link2,
   List,
+  ListChecks,
   ListCollapse,
   ListOrdered,
-  ListTodo,
   Minus,
   PaintBucket,
   Palette,
@@ -58,6 +62,7 @@ import {
   Plate,
   PlateContent,
   PlateElement,
+  useEditorSelector,
   usePlateEditor,
   type PlateElementProps,
 } from "platejs/react"
@@ -115,6 +120,19 @@ const initialResumeValue: Value = [
   },
 ]
 
+// Text-align and line-height only target paragraphs by default, which is why
+// alignment "only works on some text". Inject them into headings and quotes too.
+const blockStyleTargets = [
+  KEYS.p,
+  KEYS.h1,
+  KEYS.h2,
+  KEYS.h3,
+  KEYS.h4,
+  KEYS.h5,
+  KEYS.h6,
+  KEYS.blockquote,
+]
+
 const editorPlugins = [
   BoldPlugin,
   ItalicPlugin,
@@ -122,10 +140,10 @@ const editorPlugins = [
   FontColorPlugin,
   FontBackgroundColorPlugin,
   FontSizePlugin,
-  TextAlignPlugin,
-  LineHeightPlugin,
+  TextAlignPlugin.configure({ inject: { targetPlugins: blockStyleTargets } }),
+  LineHeightPlugin.configure({ inject: { targetPlugins: blockStyleTargets } }),
   IndentPlugin,
-  ListPlugin,
+  ListPlugin.configure({ render: { belowNodes: renderResumeListBelow } }),
   LinkPlugin,
   TogglePlugin.withComponent(ResumeToggleElement),
   HorizontalRulePlugin.withComponent(ResumeHorizontalRuleElement),
@@ -165,6 +183,21 @@ const alignOptions: Array<{ label: string; value: ResumeTextAlign }> = [
   { label: "Justify", value: "justify" },
 ]
 
+// Default point size each block renders at (kept in sync with resume.css). Used
+// as the baseline for the font-size stepper so it adjusts from the size of the
+// currently selected text rather than the last value used.
+const FALLBACK_FONT_SIZE = 10
+const blockFontSizeDefaults: Record<string, number> = {
+  blockquote: 10,
+  h1: 22,
+  h2: 16,
+  h3: 14,
+  h4: 13,
+  h5: 12,
+  h6: 11,
+  p: 10,
+}
+
 type OptionalEditorTransforms = {
   backgroundColor?: { addMark: (value: string) => void }
   color?: { addMark: (value: string) => void }
@@ -198,36 +231,46 @@ p {
   margin: 0 0 4pt;
 }
 h1 {
-  margin: 28pt 0 9pt;
-  font-size: 16pt;
-  font-weight: 400;
-  line-height: 1.1;
+  margin: 0 0 6pt;
+  font-size: 22pt;
+  font-weight: 600;
+  line-height: 1.15;
   text-align: center;
 }
 .resume-contact {
-  margin: 0 0 16pt;
-  font-size: 6.8pt;
+  margin: 0 0 14pt;
+  font-size: 9pt;
   text-align: center;
 }
 h2 {
-  margin: 14pt 0 7pt;
+  margin: 14pt 0 6pt;
   padding-bottom: 4pt;
   border-bottom: 1px solid #777777;
-  font-size: 8.8pt;
+  font-size: 16pt;
   font-weight: 700;
   line-height: 1.2;
   text-transform: uppercase;
 }
 h3 {
-  margin: 9pt 0 2pt;
+  margin: 10pt 0 2pt;
   color: #1f4e79;
-  font-size: 7.8pt;
+  font-size: 14pt;
   font-weight: 700;
   line-height: 1.25;
 }
-h4, h5, h6 {
-  margin: 7pt 0 2pt;
-  font-size: 7.6pt;
+h4 {
+  margin: 8pt 0 2pt;
+  font-size: 13pt;
+  font-weight: 700;
+}
+h5 {
+  margin: 8pt 0 2pt;
+  font-size: 12pt;
+  font-weight: 700;
+}
+h6 {
+  margin: 8pt 0 2pt;
+  font-size: 11pt;
   font-weight: 700;
 }
 ul, ol {
@@ -309,6 +352,76 @@ function ResumeHorizontalRuleElement(props: PlateElementProps) {
       {props.children}
     </PlateElement>
   )
+}
+
+type ResumeListElement = TElement & {
+  checked?: boolean
+  listStart?: number
+  listStyleType?: string
+}
+
+// Renders todo list items as real checkboxes (Plate treats "todo" as an ordered
+// list by default, which is why the To-do button produced numbers). Bulleted,
+// numbered and alpha lists keep Plate's default ul/ol rendering.
+function ResumeListWrapper(props: {
+  children: React.ReactNode
+  element: ResumeListElement
+}) {
+  const { children, element } = props
+  const todoState = useTodoListElementState({ element })
+  const { checkboxProps } = useTodoListElement(todoState)
+
+  if (element.listStyleType === KEYS.listTodo) {
+    return (
+      <div className="resume-editor-todo">
+        <span className="resume-editor-todo-marker" contentEditable={false}>
+          <input
+            checked={checkboxProps.checked}
+            className="resume-editor-todo-checkbox"
+            type="checkbox"
+            onChange={(event) => checkboxProps.onCheckedChange(event.target.checked)}
+            onMouseDown={checkboxProps.onMouseDown}
+          />
+        </span>
+        <span
+          className="resume-editor-todo-text"
+          data-checked={checkboxProps.checked ? "true" : "false"}
+        >
+          {children}
+        </span>
+      </div>
+    )
+  }
+
+  const ordered = isOrderedList(element)
+  const ListTag = ordered ? "ol" : "ul"
+  return (
+    <ListTag
+      start={ordered ? element.listStart : undefined}
+      style={{
+        listStyleType: element.listStyleType,
+        margin: 0,
+        padding: 0,
+        position: "relative",
+      }}
+    >
+      <li>{children}</li>
+    </ListTag>
+  )
+}
+
+// Plate invokes the returned function inline (not as JSX), so it must return an
+// element via createElement rather than a component that runs hooks — otherwise
+// ResumeListWrapper's hooks would leak into ElementContent's hook sequence.
+// Keeping this an anonymous, lowercase, hook-free arrow also stops the React
+// Compiler from injecting useMemoCache into it.
+function renderResumeListBelow(props: { element: ResumeListElement }) {
+  if (!props.element.listStyleType) return
+  return (belowProps: { children: React.ReactNode; element: ResumeListElement }) =>
+    createElement(ResumeListWrapper, {
+      children: belowProps.children,
+      element: belowProps.element,
+    })
 }
 
 function getNodeText(node: unknown): string {
@@ -514,134 +627,56 @@ ${bodyHtml}
 </html>`
 }
 
-export function ResumeEditor() {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const settingsSignatureRef = useRef("")
-  const [settings, setSettings] = useState<ResumeEditorSettings>(
-    defaultResumeEditorSettings,
-  )
-  const [settingsReady, setSettingsReady] = useState(false)
-  const [status, setStatus] = useState("Ready")
-
-  const editor = usePlateEditor({
+function useResumeEditor() {
+  return usePlateEditor({
     plugins: editorPlugins,
     value: loadInitialValue,
   })
+}
 
-  useEffect(() => {
-    let cancelled = false
+type ResumeEditorInstance = ReturnType<typeof useResumeEditor>
 
-    async function loadSettings() {
-      const result = await fetchResumeEditorSettings()
-      if (cancelled) return
-
-      if (result.ok && result.data) {
-        setSettings(result.data)
-        settingsSignatureRef.current = JSON.stringify(result.data)
-        setStatus("Settings loaded")
-      } else if (result.ok) {
-        settingsSignatureRef.current = JSON.stringify(defaultResumeEditorSettings)
-      } else {
-        setStatus(`Settings unavailable: ${result.error}`)
-      }
-
-      setSettingsReady(true)
-    }
-
-    void loadSettings()
-
-    return () => {
-      cancelled = true
-    }
+// The formatting toolbar lives inside <Plate> so it can read the live selection
+// (current block, font size, alignment) via useEditorSelector.
+function ResumeToolbar({
+  editor,
+  settings,
+  updateSettings,
+}: {
+  editor: ResumeEditorInstance
+  settings: ResumeEditorSettings
+  updateSettings: (next: Partial<ResumeEditorSettings>) => void
+}) {
+  const currentBlockType = useEditorSelector((editorRef) => {
+    const entry = editorRef.api.block<TElement>()
+    return (entry?.[0].type as string | undefined) ?? "p"
   }, [])
 
-  useEffect(() => {
-    if (!settingsReady) return
+  const effectiveFontSize = useEditorSelector((editorRef) => {
+    const marks = editorRef.api.marks() as { fontSize?: string } | null
+    if (marks?.fontSize) {
+      const parsed = Number.parseFloat(marks.fontSize)
+      if (Number.isFinite(parsed)) return Math.round(parsed)
+    }
 
-    const signature = JSON.stringify(settings)
-    if (signature === settingsSignatureRef.current) return
+    const entry = editorRef.api.block<TElement>()
+    const type = (entry?.[0].type as string | undefined) ?? "p"
+    return blockFontSizeDefaults[type] ?? FALLBACK_FONT_SIZE
+  }, [])
 
-    const timeout = window.setTimeout(() => {
-      void saveResumeEditorSettings(settings).then((result) => {
-        if (result.ok) {
-          settingsSignatureRef.current = JSON.stringify(result.data)
-          setStatus("Settings saved")
-        } else {
-          setStatus(`Settings save failed: ${result.error}`)
-        }
-      })
-    }, 500)
-
-    return () => window.clearTimeout(timeout)
-  }, [settings, settingsReady])
+  const currentAlign = useEditorSelector((editorRef) => {
+    const entry = editorRef.api.block<TElement & { textAlign?: string }>()
+    const align = entry?.[0].textAlign
+    return align === "center" || align === "right" || align === "justify"
+      ? align
+      : "left"
+  }, [])
 
   function transforms() {
     return editor.tf as typeof editor.tf & OptionalEditorTransforms
   }
 
-  function updateSettings(next: Partial<ResumeEditorSettings>) {
-    setSettings((current) => ({ ...current, ...next }))
-  }
-
-  async function handleImportDocx(file: File | undefined) {
-    if (!file) return
-
-    setStatus(`Importing ${file.name}`)
-    try {
-      const { importDocx } = await import("@platejs/docx-io")
-      const arrayBuffer = await file.arrayBuffer()
-      const result = await importDocx(editor, arrayBuffer)
-      const normalizedNodes = normalizeImportedResumeValue(result.nodes as Value)
-      editor.tf.setValue(normalizedNodes)
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedNodes))
-
-      const details = [
-        "Imported Word document",
-        result.comments.length ? `${result.comments.length} comments found` : "",
-        result.warnings.length ? `${result.warnings.length} warnings` : "",
-      ]
-        .filter(Boolean)
-        .join(" - ")
-
-      setStatus(details)
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "DOCX import failed")
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = ""
-    }
-  }
-
-  async function handleExportDocx() {
-    setStatus("Exporting Word document")
-    try {
-      const { downloadDocx, htmlToDocxBlob } = await import("@platejs/docx-io")
-      const blob = await htmlToDocxBlob(wrapResumeHtmlForDocx(serializeResumeToHtml(editor.children)), {
-        font: "Calibri",
-        margins: {
-          bottom: 1080,
-          left: 1080,
-          right: 1080,
-          top: 1080,
-        },
-        orientation: "portrait",
-        title: "Resume",
-      })
-      downloadDocx(blob, "resume.docx")
-      setStatus("Exported resume.docx")
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "DOCX export failed")
-    }
-  }
-
-  function handleReset() {
-    editor.tf.setValue(initialResumeValue)
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initialResumeValue))
-    setStatus("Reset to starter resume")
-  }
-
   function handleBlockStyleChange(value: string) {
-    updateSettings({ blockStyle: value })
-
     if (value === "p") {
       editor.tf.toggleBlock("p")
       return
@@ -688,10 +723,10 @@ export function ResumeEditor() {
     }
   }
 
-  function applyFontSize(nextSize: number) {
-    const fontSize = Math.min(28, Math.max(8, nextSize))
-    updateSettings({ fontSize })
-    transforms().fontSize?.addMark(`${fontSize}pt`)
+  function applyFontSizeBy(delta: number) {
+    const next = Math.min(72, Math.max(6, effectiveFontSize + delta))
+    updateSettings({ fontSize: next })
+    transforms().fontSize?.addMark(`${next}pt`)
   }
 
   function applyTextColor(color: string) {
@@ -724,7 +759,7 @@ export function ResumeEditor() {
   }
 
   function handleTodoList() {
-    indentTodo(editor as SlateEditor, { listStyleType: "todo" })
+    toggleList(editor as SlateEditor, { listStyleType: KEYS.listTodo })
   }
 
   function handleInsertLink() {
@@ -739,196 +774,268 @@ export function ResumeEditor() {
   }
 
   return (
-    <section className="resume-editor-page" aria-label="Resume editor">
-      <header className="resume-editor-header">
-        <div className="resume-editor-title-group">
-          <h1 className="resume-editor-title">Resume</h1>
-          <span className="resume-editor-status">{status}</span>
-        </div>
-      </header>
+    <div className="resume-editor-toolbar" aria-label="Formatting tools">
+      <div className="resume-editor-control-group">
+        <select
+          aria-label="Block type"
+          className="resume-editor-select resume-editor-block-select"
+          value={
+            blockOptions.some((option) => option.value === currentBlockType)
+              ? currentBlockType
+              : "p"
+          }
+          onChange={(event) => handleBlockStyleChange(event.target.value)}
+        >
+          {blockOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
+      <div className="resume-editor-control-group">
+        <ToolButton label="Undo" onClick={() => transforms().undo?.()}>
+          <Undo2 aria-hidden="true" />
+        </ToolButton>
+        <ToolButton label="Redo" onClick={() => transforms().redo?.()}>
+          <Redo2 aria-hidden="true" />
+        </ToolButton>
+      </div>
+
+      <div className="resume-editor-control-group resume-editor-size-group">
+        <ToolButton label="Decrease font size" onClick={() => applyFontSizeBy(-1)}>
+          <Minus aria-hidden="true" />
+        </ToolButton>
+        <span className="resume-editor-size-value">{effectiveFontSize}</span>
+        <ToolButton label="Increase font size" onClick={() => applyFontSizeBy(1)}>
+          <Plus aria-hidden="true" />
+        </ToolButton>
+      </div>
+
+      <div className="resume-editor-control-group">
+        <ToolButton label="Bold" onClick={() => editor.tf.bold.toggle()}>
+          <Bold aria-hidden="true" />
+        </ToolButton>
+        <ToolButton label="Italic" onClick={() => editor.tf.italic.toggle()}>
+          <Italic aria-hidden="true" />
+        </ToolButton>
+        <ToolButton label="Underline" onClick={() => editor.tf.underline.toggle()}>
+          <Underline aria-hidden="true" />
+        </ToolButton>
+      </div>
+
+      <div className="resume-editor-control-group">
+        <ColorControl
+          label="Text"
+          icon={<Palette aria-hidden="true" />}
+          value={settings.textColor}
+          onChange={applyTextColor}
+        />
+        <ColorControl
+          label="Background"
+          icon={<PaintBucket aria-hidden="true" />}
+          value={settings.backgroundColor}
+          onChange={applyBackgroundColor}
+        />
+        <ColorControl
+          label="Highlight"
+          icon={<Highlighter aria-hidden="true" />}
+          value={settings.highlightColor}
+          onChange={applyHighlightColor}
+        />
+      </div>
+
+      <div className="resume-editor-control-group">
+        <label className="resume-editor-icon-select" title="Line height">
+          <Rows3 aria-hidden="true" />
+          <select
+            className="resume-editor-select resume-editor-compact-select"
+            value={settings.lineHeight}
+            onChange={(event) => applyLineHeight(Number(event.target.value))}
+          >
+            {lineHeightOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {alignOptions.map((option) => (
+          <ToolButton
+            key={option.value}
+            active={currentAlign === option.value}
+            label={`Align ${option.label.toLowerCase()}`}
+            onClick={() => applyAlign(option.value)}
+          >
+            {option.value === "left" ? <AlignLeft aria-hidden="true" /> : null}
+            {option.value === "center" ? <AlignCenter aria-hidden="true" /> : null}
+            {option.value === "right" ? <AlignRight aria-hidden="true" /> : null}
+            {option.value === "justify" ? <AlignJustify aria-hidden="true" /> : null}
+          </ToolButton>
+        ))}
+      </div>
+
+      <div className="resume-editor-control-group">
+        <ToolButton label="Bullet list" onClick={() => handleList("disc")}>
+          <List aria-hidden="true" />
+        </ToolButton>
+        <ToolButton label="Numbered list" onClick={() => handleList("decimal")}>
+          <ListOrdered aria-hidden="true" />
+        </ToolButton>
+        <ToolButton label="Lettered list" onClick={() => handleList("lower-alpha")}>
+          <ArrowDownAZ aria-hidden="true" />
+        </ToolButton>
+        <ToolButton label="To-do checklist" onClick={handleTodoList}>
+          <ListChecks aria-hidden="true" />
+        </ToolButton>
+      </div>
+
+      <div className="resume-editor-control-group">
+        <ToolButton label="Outdent" onClick={() => outdentList(editor as SlateEditor)}>
+          <IndentDecrease aria-hidden="true" />
+        </ToolButton>
+        <ToolButton label="Indent" onClick={() => indentList(editor as SlateEditor)}>
+          <IndentIncrease aria-hidden="true" />
+        </ToolButton>
+      </div>
+
+      <div className="resume-editor-control-group">
+        <ToolButton
+          label="Toggle list"
+          onClick={() => handleBlockStyleChange("toggle")}
+        >
+          <ListCollapse aria-hidden="true" />
+        </ToolButton>
+        <ToolButton label="Link" onClick={handleInsertLink}>
+          <Link2 aria-hidden="true" />
+        </ToolButton>
+        <ToolButton label="Horizontal rule" onClick={handleInsertHorizontalRule}>
+          <SeparatorHorizontal aria-hidden="true" />
+        </ToolButton>
+      </div>
+    </div>
+  )
+}
+
+export function ResumeEditor() {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const settingsSignatureRef = useRef("")
+  const [settings, setSettings] = useState<ResumeEditorSettings>(
+    defaultResumeEditorSettings,
+  )
+  const [settingsReady, setSettingsReady] = useState(false)
+
+  const editor = useResumeEditor()
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadSettings() {
+      const result = await fetchResumeEditorSettings()
+      if (cancelled) return
+
+      if (result.ok && result.data) {
+        setSettings(result.data)
+        settingsSignatureRef.current = JSON.stringify(result.data)
+      } else if (result.ok) {
+        settingsSignatureRef.current = JSON.stringify(defaultResumeEditorSettings)
+      } else {
+        console.error(`Resume settings unavailable: ${result.error}`)
+      }
+
+      setSettingsReady(true)
+    }
+
+    void loadSettings()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!settingsReady) return
+
+    const signature = JSON.stringify(settings)
+    if (signature === settingsSignatureRef.current) return
+
+    const timeout = window.setTimeout(() => {
+      void saveResumeEditorSettings(settings).then((result) => {
+        if (result.ok) {
+          settingsSignatureRef.current = JSON.stringify(result.data)
+        } else {
+          console.error(`Resume settings save failed: ${result.error}`)
+        }
+      })
+    }, 500)
+
+    return () => window.clearTimeout(timeout)
+  }, [settings, settingsReady])
+
+  function updateSettings(next: Partial<ResumeEditorSettings>) {
+    setSettings((current) => ({ ...current, ...next }))
+  }
+
+  async function handleImportDocx(file: File | undefined) {
+    if (!file) return
+
+    try {
+      const { importDocx } = await import("@platejs/docx-io")
+      const arrayBuffer = await file.arrayBuffer()
+      const result = await importDocx(editor, arrayBuffer)
+      const normalizedNodes = normalizeImportedResumeValue(result.nodes as Value)
+      editor.tf.setValue(normalizedNodes)
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedNodes))
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : "DOCX import failed")
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  async function handleExportDocx() {
+    try {
+      const { downloadDocx, htmlToDocxBlob } = await import("@platejs/docx-io")
+      const blob = await htmlToDocxBlob(wrapResumeHtmlForDocx(serializeResumeToHtml(editor.children)), {
+        font: "Calibri",
+        margins: {
+          bottom: 1080,
+          left: 1080,
+          right: 1080,
+          top: 1080,
+        },
+        orientation: "portrait",
+        title: "Resume",
+      })
+      downloadDocx(blob, "resume.docx")
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : "DOCX export failed")
+    }
+  }
+
+  function handleReset() {
+    editor.tf.setValue(initialResumeValue)
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initialResumeValue))
+  }
+
+  return (
+    <section className="resume-editor-page" aria-label="Resume editor">
       <Plate
         editor={editor}
         onChange={({ value }) => {
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
-          setStatus("Saved locally")
         }}
       >
         <div className="resume-editor-workspace">
           <div className="resume-editor-side-space" aria-hidden="true" />
           <div className="resume-editor-shell">
             <div className="resume-editor-topbar">
-              <div className="resume-editor-toolbar" aria-label="Formatting tools">
-                <div className="resume-editor-control-group">
-                  <label className="resume-editor-field">
-                    <span className="resume-editor-field-label">Turn into</span>
-                    <select
-                      className="resume-editor-select resume-editor-block-select"
-                      value={settings.blockStyle}
-                      onChange={(event) =>
-                        handleBlockStyleChange(event.target.value)
-                      }
-                    >
-                      {blockOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="resume-editor-control-group">
-                  <ToolButton label="Undo" onClick={() => transforms().undo?.()}>
-                    <Undo2 aria-hidden="true" />
-                  </ToolButton>
-                  <ToolButton label="Redo" onClick={() => transforms().redo?.()}>
-                    <Redo2 aria-hidden="true" />
-                  </ToolButton>
-                </div>
-
-                <div className="resume-editor-control-group resume-editor-size-group">
-                  <ToolButton
-                    label="Decrease font size"
-                    onClick={() => applyFontSize(settings.fontSize - 1)}
-                  >
-                    <Minus aria-hidden="true" />
-                  </ToolButton>
-                  <span className="resume-editor-size-value">{settings.fontSize}</span>
-                  <ToolButton
-                    label="Increase font size"
-                    onClick={() => applyFontSize(settings.fontSize + 1)}
-                  >
-                    <Plus aria-hidden="true" />
-                  </ToolButton>
-                </div>
-
-                <div className="resume-editor-control-group">
-                  <ToolButton label="Bold" onClick={() => editor.tf.bold.toggle()}>
-                    <Bold aria-hidden="true" />
-                  </ToolButton>
-                  <ToolButton label="Italic" onClick={() => editor.tf.italic.toggle()}>
-                    <Italic aria-hidden="true" />
-                  </ToolButton>
-                  <ToolButton
-                    label="Underline"
-                    onClick={() => editor.tf.underline.toggle()}
-                  >
-                    <Underline aria-hidden="true" />
-                  </ToolButton>
-                </div>
-
-                <div className="resume-editor-control-group">
-                  <ColorControl
-                    label="Text"
-                    icon={<Palette aria-hidden="true" />}
-                    value={settings.textColor}
-                    onChange={applyTextColor}
-                  />
-                  <ColorControl
-                    label="Background"
-                    icon={<PaintBucket aria-hidden="true" />}
-                    value={settings.backgroundColor}
-                    onChange={applyBackgroundColor}
-                  />
-                  <ColorControl
-                    label="Highlight"
-                    icon={<Highlighter aria-hidden="true" />}
-                    value={settings.highlightColor}
-                    onChange={applyHighlightColor}
-                  />
-                </div>
-
-                <div className="resume-editor-control-group">
-                  <label className="resume-editor-icon-select" title="Line height">
-                    <Rows3 aria-hidden="true" />
-                    <select
-                      className="resume-editor-select resume-editor-compact-select"
-                      value={settings.lineHeight}
-                      onChange={(event) => applyLineHeight(Number(event.target.value))}
-                    >
-                      {lineHeightOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {alignOptions.map((option) => (
-                    <ToolButton
-                      key={option.value}
-                      active={settings.align === option.value}
-                      label={`Align ${option.label.toLowerCase()}`}
-                      onClick={() => applyAlign(option.value)}
-                    >
-                      {option.value === "left" ? <AlignLeft aria-hidden="true" /> : null}
-                      {option.value === "center" ? (
-                        <AlignCenter aria-hidden="true" />
-                      ) : null}
-                      {option.value === "right" ? (
-                        <AlignRight aria-hidden="true" />
-                      ) : null}
-                      {option.value === "justify" ? (
-                        <AlignJustify aria-hidden="true" />
-                      ) : null}
-                    </ToolButton>
-                  ))}
-                </div>
-
-                <div className="resume-editor-control-group">
-                  <ToolButton label="Bullet list" onClick={() => handleList("disc")}>
-                    <List aria-hidden="true" />
-                  </ToolButton>
-                  <ToolButton
-                    label="Numbered list"
-                    onClick={() => handleList("decimal")}
-                  >
-                    <ListOrdered aria-hidden="true" />
-                  </ToolButton>
-                  <ToolButton
-                    label="Alpha list"
-                    onClick={() => handleList("lower-alpha")}
-                  >
-                    <Baseline aria-hidden="true" />
-                  </ToolButton>
-                  <ToolButton label="To-do" onClick={handleTodoList}>
-                    <ListTodo aria-hidden="true" />
-                  </ToolButton>
-                </div>
-
-                <div className="resume-editor-control-group">
-                  <ToolButton
-                    label="Outdent"
-                    onClick={() => outdentList(editor as SlateEditor)}
-                  >
-                    <IndentDecrease aria-hidden="true" />
-                  </ToolButton>
-                  <ToolButton
-                    label="Indent"
-                    onClick={() => indentList(editor as SlateEditor)}
-                  >
-                    <IndentIncrease aria-hidden="true" />
-                  </ToolButton>
-                </div>
-
-                <div className="resume-editor-control-group">
-                  <ToolButton
-                    label="Toggle list"
-                    onClick={() => handleBlockStyleChange("toggle")}
-                  >
-                    <ListCollapse aria-hidden="true" />
-                  </ToolButton>
-                  <ToolButton label="Link" onClick={handleInsertLink}>
-                    <Link2 aria-hidden="true" />
-                  </ToolButton>
-                  <ToolButton
-                    label="Horizontal rule"
-                    onClick={handleInsertHorizontalRule}
-                  >
-                    <SeparatorHorizontal aria-hidden="true" />
-                  </ToolButton>
-                </div>
-              </div>
+              <ResumeToolbar
+                editor={editor}
+                settings={settings}
+                updateSettings={updateSettings}
+              />
 
               <div
                 className="resume-editor-actions"
