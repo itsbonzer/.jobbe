@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "dev:api": "python -m uvicorn api.main:app --app-dir ../.server --host 127.0.0.1 --port 8787",
+    "dev:api": "python -B -m uvicorn api.main:app --app-dir ../.server --host 127.0.0.1 --port 8787",
     "dev:vite": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

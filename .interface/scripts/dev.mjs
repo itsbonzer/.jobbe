@@ -81,6 +81,7 @@ process.on("SIGINT", () => shutdown(0))
 process.on("SIGTERM", () => shutdown(0))
 
 startProcess("api", "python", [
+  "-B",
   "-m",
   "uvicorn",
   "api.main:app",
