@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ArrowClockwiseIcon,
+  BoxInArrowDownIcon,
   BoxOutArrowUpIcon,
   ChevronDownIcon,
   ChevronUpIcon,
@@ -36,15 +37,23 @@ import {
   loadJobsGridState,
   saveJobsGridState,
 } from "./gridState"
-import { deleteJobRows, fetchJobsDistinctValues, updateJobRow } from "./jobsApi"
+import {
+  deleteJobRows,
+  fetchJobsDistinctValues,
+  promoteJobsToApply,
+  updateJobRow,
+} from "./jobsApi"
 import {
   getDaysSinceUpdated,
   getEffectiveUpdatedDate,
   isGroupRow,
   type JobRow,
   type JobsGridRow,
+  type JobsTableName,
 } from "./types"
 import { JobDetailsPanel } from "./JobDetailsPanel"
+
+import "./find.css"
 
 export type JobsGridState = {
   isLoading: boolean
@@ -53,6 +62,7 @@ export type JobsGridState = {
 }
 
 type JobsGridProps = {
+  table?: JobsTableName
   onStateChange?: (state: JobsGridState) => void
 }
 
@@ -82,6 +92,8 @@ const NULLABLE_TEXT_FIELDS = new Set<keyof JobRow>([
   "keywords",
 ])
 
+const APPLY_STATUS_OPTIONS = ["Keywords", "Resume", "Applied"]
+
 const jobsGridTheme = themeQuartz.withPart(colorSchemeDark).withParams({
   backgroundColor: "#101317",
   dataBackgroundColor: "#1a1f25",
@@ -93,7 +105,8 @@ const jobsGridTheme = themeQuartz.withPart(colorSchemeDark).withParams({
   browserColorScheme: "dark",
 })
 
-export function JobsGrid({ onStateChange }: JobsGridProps) {
+export function JobsGrid({ table = "jobs", onStateChange }: JobsGridProps) {
+  const gridStateKey = table === "apply" ? "jobs:apply" : "jobs:find"
   const gridRef = useRef<AgGridReact<JobsGridRow>>(null)
   const distinctValuesCache = useRef(new Map<string, Array<string | null>>())
   const isRevertingCellRef = useRef(false)
@@ -101,6 +114,8 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
   const [gridState, setGridState] = useState<JobsGridState>(INITIAL_STATE)
   const [selectedLeafCount, setSelectedLeafCount] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isPromoting, setIsPromoting] = useState(false)
+  const [promoteMessage, setPromoteMessage] = useState<string | null>(null)
   const [detailsJob, setDetailsJob] = useState<JobRow | null>(null)
 
   const updateGridState = useCallback((nextState: Partial<JobsGridState>) => {
@@ -117,7 +132,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
   const datasource = useMemo(
     () =>
       createJobsDatasource({
-        table: "jobs",
+        table,
         callbacks: {
           onLoadStart: () => {
             updateGridState({ isLoading: true, error: null })
@@ -135,7 +150,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
           },
         },
       }),
-    [updateGridState],
+    [table, updateGridState],
   )
 
   const createSetFilterValues = useCallback(
@@ -147,7 +162,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
           return
         }
 
-        void fetchJobsDistinctValues({ table: "jobs", column }).then((result) => {
+        void fetchJobsDistinctValues({ table, column }).then((result) => {
           if (!result.ok) {
             updateGridState({ error: result.error })
             params.success([])
@@ -158,7 +173,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
           params.success(result.data.values)
         })
       },
-    [updateGridState],
+    [table, updateGridState],
   )
 
   const columnDefs = useMemo<ColDef<JobsGridRow>[]>(
@@ -170,6 +185,41 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
           suppressClearModelOnRefreshValues: true,
         },
       })
+
+      const applyStatusColumn: ColDef<JobsGridRow> = {
+        field: "status",
+        headerName: "Status",
+        minWidth: 130,
+        width: 150,
+        cellEditor: "agRichSelectCellEditor",
+        cellEditorParams: { values: APPLY_STATUS_OPTIONS },
+        ...setFilter("status"),
+      }
+
+      const applyKeywordsColumn: ColDef<JobsGridRow> = {
+        field: "keywords",
+        headerName: "Keywords",
+        editable: false,
+        sortable: false,
+        filter: false,
+        minWidth: 160,
+        width: 240,
+        cellRenderer: (
+          params: ICellRendererParams<JobsGridRow, string | null>,
+        ) => {
+          const job = params.data
+          if (!job || isGroupRow(job)) {
+            return null
+          }
+
+          const text = params.value?.trim() ?? ""
+          return (
+            <span className="jobs-grid-description-text" title={text}>
+              {text}
+            </span>
+          )
+        },
+      }
 
       return [
         {
@@ -184,11 +234,23 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
           minWidth: 180,
           width: 260,
         },
+        ...(table === "apply" ? [applyStatusColumn] : []),
         {
           field: "job_description",
           headerName: "Description",
           minWidth: 180,
           width: 360,
+          ...(table === "apply"
+            ? {
+                cellEditor: "agLargeTextCellEditor",
+                cellEditorPopup: true,
+                cellEditorParams: {
+                  maxLength: 20000,
+                  rows: 16,
+                  cols: 64,
+                },
+              }
+            : {}),
           cellRenderer: (
             params: ICellRendererParams<JobsGridRow, string | null>,
           ) => {
@@ -322,6 +384,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
             )
           },
         },
+        ...(table === "apply" ? [applyKeywordsColumn] : []),
         {
           field: "job_url",
           headerName: "Job URL",
@@ -331,7 +394,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
         },
       ]
     },
-    [createSetFilterValues],
+    [createSetFilterValues, table],
   )
 
   const defaultColDef = useMemo<ColDef<JobsGridRow>>(
@@ -380,16 +443,24 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
   const handleSelectionChanged = useCallback(() => {
     const selectedRows = gridRef.current?.api.getSelectedRows() ?? []
     setSelectedLeafCount(selectedRows.filter(isJobRow).length)
+    setPromoteMessage(null)
   }, [])
 
-  const handleRowClicked = useCallback((event: RowClickedEvent<JobsGridRow>) => {
-    const row = event.data
-    if (!row || isGroupRow(row)) {
-      return
-    }
+  const handleRowClicked = useCallback(
+    (event: RowClickedEvent<JobsGridRow>) => {
+      if (table === "apply") {
+        return
+      }
 
-    setDetailsJob(row)
-  }, [])
+      const row = event.data
+      if (!row || isGroupRow(row)) {
+        return
+      }
+
+      setDetailsJob(row)
+    },
+    [table],
+  )
 
   const handleCellValueChanged = useCallback(
     async (event: CellValueChangedEvent<JobsGridRow>) => {
@@ -414,7 +485,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
 
       const patch = { [field]: nextValue } as Partial<JobRow>
       const result = await updateJobRow(event.data.job_url, {
-        table: "jobs",
+        table,
         patch,
       })
 
@@ -427,7 +498,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
 
       updateGridState({ error: null })
     },
-    [updateGridState],
+    [table, updateGridState],
   )
 
   const handleRefresh = () => {
@@ -448,7 +519,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
   const handleGridReady = (event: GridReadyEvent<JobsGridRow>) => {
     gridStateHydratedRef.current = false
 
-    void loadJobsGridState().then((result) => {
+    void loadJobsGridState(gridStateKey).then((result) => {
       event.api.setState(result.state ?? DEFAULT_JOBS_GRID_STATE)
       gridStateHydratedRef.current = true
 
@@ -467,7 +538,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
       return
     }
 
-    void saveJobsGridState(event.state).then((result) => {
+    void saveJobsGridState(gridStateKey, event.state).then((result) => {
       if (!result.ok) {
         updateGridState({ error: result.error })
       }
@@ -481,7 +552,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
       return
     }
 
-    void saveJobsGridState(event.state)
+    void saveJobsGridState(gridStateKey, event.state)
   }
 
   const handleToggleToolPanel = (panelId: string) => {
@@ -531,7 +602,7 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
 
     setIsDeleting(true)
     const result = await deleteJobRows({
-      table: "jobs",
+      table,
       jobUrls: selectedRows.map((row) => row.job_url),
     })
 
@@ -549,10 +620,66 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
     api.refreshServerSide({ purge: true })
   }
 
+  const handleAddToApply = async () => {
+    const api = gridRef.current?.api
+    if (!api || selectedLeafCount === 0 || isPromoting) {
+      return
+    }
+
+    const selectedRows = api.getSelectedRows().filter(isJobRow)
+    if (selectedRows.length === 0) {
+      setSelectedLeafCount(0)
+      return
+    }
+
+    setIsPromoting(true)
+    setPromoteMessage(null)
+    const result = await promoteJobsToApply(selectedRows)
+    setIsPromoting(false)
+
+    if (!result.ok) {
+      updateGridState({ error: result.error })
+      return
+    }
+
+    api.deselectAll()
+    setSelectedLeafCount(0)
+    updateGridState({ error: null })
+
+    const { promoted } = result.data
+    setPromoteMessage(
+      promoted === 0
+        ? "Selected jobs are already in Apply."
+        : `Added ${promoted} ${promoted === 1 ? "job" : "jobs"} to Apply.`,
+    )
+  }
+
   return (
     <AgGridProvider modules={[AllEnterpriseModule]}>
       <div className="jobs-grid-shell">
         <div className="jobs-grid-toolbar">
+          {table === "jobs" && (
+            <>
+              {promoteMessage && (
+                <span className="jobs-grid-toolbar-message">
+                  {promoteMessage}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                onClick={handleAddToApply}
+                aria-label="Add selected jobs to Apply"
+                title="Add selected jobs to Apply"
+              >
+                <BoxInArrowDownIcon aria-hidden="true" />
+                <span>
+                  {selectedLeafCount > 0
+                    ? `Add to Apply (${selectedLeafCount})`
+                    : "Add to Apply"}
+                </span>
+              </Button>
+            </>
+          )}
           <Button
             variant="outline"
             onClick={handleExpandAll}
@@ -664,7 +791,9 @@ export function JobsGrid({ onStateChange }: JobsGridProps) {
           />
         </div>
 
-        <JobDetailsPanel job={detailsJob} onClose={() => setDetailsJob(null)} />
+        {table === "jobs" && (
+          <JobDetailsPanel job={detailsJob} onClose={() => setDetailsJob(null)} />
+        )}
       </div>
     </AgGridProvider>
   )

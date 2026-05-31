@@ -43,6 +43,10 @@ export type JobDeleteResponse = {
   deleted: number
 }
 
+export type JobPromoteResponse = {
+  promoted: number
+}
+
 export type JobRow = {
   job_url: string
   company: string

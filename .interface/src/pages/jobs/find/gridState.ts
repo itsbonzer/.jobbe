@@ -13,8 +13,6 @@ export type GridStateLoadResult = {
   warning: string | null
 }
 
-const GRID_STATE_KEY = "jobs:find"
-
 export const DEFAULT_JOBS_GRID_STATE: GridState = {
   rowGroup: {
     groupColIds: ["company"],
@@ -25,8 +23,8 @@ export const DEFAULT_JOBS_GRID_STATE: GridState = {
   partialColumnState: true,
 }
 
-export async function loadJobsGridState(): Promise<GridStateLoadResult> {
-  const result = await fetchGridPreference<JobsGridStatePreference>(GRID_STATE_KEY)
+export async function loadJobsGridState(key: string): Promise<GridStateLoadResult> {
+  const result = await fetchGridPreference<JobsGridStatePreference>(key)
   if (!result.ok) {
     return { state: null, warning: result.error }
   }
@@ -48,9 +46,10 @@ export async function loadJobsGridState(): Promise<GridStateLoadResult> {
 }
 
 export async function saveJobsGridState(
+  key: string,
   state: GridState,
 ): Promise<JobsApiResult<null>> {
-  const result = await saveGridPreference(GRID_STATE_KEY, {
+  const result = await saveGridPreference(key, {
     version: 1,
     state: sanitizeGridState(state),
   })

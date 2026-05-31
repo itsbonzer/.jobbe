@@ -3,6 +3,8 @@ import type {
   JobDeleteResponse,
   JobPatchRequest,
   JobPatchResponse,
+  JobPromoteResponse,
+  JobRow,
   JobsDistinctRequest,
   JobsDistinctResponse,
   JobsGridRequest,
@@ -208,6 +210,47 @@ export async function deleteJobRows(
   }
 }
 
+export async function promoteJobsToApply(
+  rows: JobRow[],
+): Promise<JobsApiResult<JobPromoteResponse>> {
+  try {
+    const response = await fetch(apiUrl("/api/jobs/promote"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ rows }),
+    })
+
+    const payload: unknown = await readJson(response)
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: readApiError(payload, "Unable to add jobs to Apply."),
+      }
+    }
+
+    if (!isJobPromoteResponse(payload)) {
+      return {
+        ok: false,
+        error: "Jobs API returned an unexpected promote payload.",
+      }
+    }
+
+    return {
+      ok: true,
+      data: payload,
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: readNetworkError(error),
+    }
+  }
+}
+
 export async function fetchGridPreference<TValue>(
   key: string,
 ): Promise<JobsApiResult<PreferenceReadResponse<TValue>>> {
@@ -330,6 +373,10 @@ function isJobPatchResponse(value: unknown): value is JobPatchResponse {
 
 function isJobDeleteResponse(value: unknown): value is JobDeleteResponse {
   return isRecord(value) && typeof value.deleted === "number"
+}
+
+function isJobPromoteResponse(value: unknown): value is JobPromoteResponse {
+  return isRecord(value) && typeof value.promoted === "number"
 }
 
 function isPreferenceReadResponse<TValue>(

@@ -48,6 +48,13 @@
   gap: 0.5rem;
 }
 
+.jobs-grid-toolbar-message {
+  margin-right: auto;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
 .jobs-grid-toolbar-button {
   display: inline-flex;
   height: 2rem;

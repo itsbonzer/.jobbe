@@ -6,12 +6,20 @@ from .contracts import (
     JobDeleteResponse,
     JobPatchRequest,
     JobPatchResponse,
+    JobPromoteRequest,
+    JobPromoteResponse,
     JobsDistinctRequest,
     JobsDistinctResponse,
     JobsGridRequest,
     JobsGridResponse,
 )
-from .service import delete_job_rows, get_jobs_distinct, get_jobs_grid, update_job_row
+from .service import (
+    delete_job_rows,
+    get_jobs_distinct,
+    get_jobs_grid,
+    promote_jobs,
+    update_job_row,
+)
 
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -51,6 +59,16 @@ def patch_job_row(job_url: str, request: JobPatchRequest) -> JobPatchResponse:
 def delete_jobs(request: JobDeleteRequest) -> JobDeleteResponse:
     try:
         return delete_job_rows(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except SupabaseApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.post("/promote", response_model=JobPromoteResponse)
+def promote_jobs_to_apply(request: JobPromoteRequest) -> JobPromoteResponse:
+    try:
+        return promote_jobs(request)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except SupabaseApiError as exc:

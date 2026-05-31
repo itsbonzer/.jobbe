@@ -141,6 +141,9 @@ class JobDeleteRequest(BaseModel):
     job_urls: list[str] = Field(alias="jobUrls")
 
 
+DEFAULT_APPLY_STATUS = "Keywords"
+
+
 class JobRow(BaseModel):
     job_url: str
     company: str
@@ -163,6 +166,14 @@ class JobRow(BaseModel):
     last_seen_run_id: str | None = None
     status: str | None = None
     keywords: str | None = None
+
+
+class JobPromoteRequest(BaseModel):
+    rows: list[JobRow]
+
+
+class JobPromoteResponse(BaseModel):
+    promoted: int
 
 
 class JobsGridResponse(BaseModel):
@@ -252,6 +263,31 @@ def normalize_job_delete_request(request: JobDeleteRequest) -> list[str]:
         deduped.append(normalized)
 
     return deduped
+
+
+def build_apply_payloads(rows: list[JobRow]) -> list[dict[str, Any]]:
+    """Turn selected job rows into `apply` insert payloads.
+
+    Keeps only populated columns (so NOT-NULL-with-default columns fall back to
+    their DB defaults), forces the starting status, drops the LLM-managed
+    keywords column, and dedupes by job_url.
+    """
+    payloads: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for row in rows:
+        job_url = row.job_url.strip()
+        if not job_url or job_url in seen:
+            continue
+
+        seen.add(job_url)
+        data = row.model_dump(exclude_none=True)
+        data["job_url"] = job_url
+        data["status"] = DEFAULT_APPLY_STATUS
+        data.pop("keywords", None)
+        payloads.append(data)
+
+    return payloads
 
 
 def _columns_for_table(table: JobsTableName) -> frozenset[str]:

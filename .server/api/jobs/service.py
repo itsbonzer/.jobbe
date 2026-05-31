@@ -7,6 +7,7 @@ from ..supabase import (
     SupabaseConfigError,
     call_rpc,
     delete_table_rows,
+    insert_table_rows,
     patch_table_row,
 )
 from .contracts import (
@@ -15,10 +16,13 @@ from .contracts import (
     JobDeleteResponse,
     JobPatchRequest,
     JobPatchResponse,
+    JobPromoteRequest,
+    JobPromoteResponse,
     JobsDistinctRequest,
     JobsDistinctResponse,
     JobsGridRequest,
     JobsGridResponse,
+    build_apply_payloads,
     normalize_job_delete_request,
     normalize_job_patch_request,
     normalize_job_url,
@@ -173,6 +177,19 @@ def delete_job_rows(request: JobDeleteRequest) -> JobDeleteResponse:
         key_values=job_urls,
     )
     return JobDeleteResponse(deleted=deleted)
+
+
+def promote_jobs(request: JobPromoteRequest) -> JobPromoteResponse:
+    payloads = build_apply_payloads(request.rows)
+    if not payloads:
+        return JobPromoteResponse(promoted=0)
+
+    inserted = insert_table_rows(
+        "apply",
+        payloads,
+        on_conflict="job_url",
+    )
+    return JobPromoteResponse(promoted=len(inserted))
 
 
 def _grid_request_payload(request: JobsGridRequest) -> dict[str, Any]:

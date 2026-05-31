@@ -145,6 +145,42 @@ def delete_table_rows(
     return len(key_values)
 
 
+def insert_table_rows(
+    table_name: str,
+    rows: list[dict[str, Any]],
+    *,
+    on_conflict: str,
+    ignore_duplicates: bool = True,
+) -> list[dict[str, Any]]:
+    if not rows:
+        return []
+
+    config = get_required_supabase_config()
+    query = urlencode({"on_conflict": on_conflict})
+    resolution = "ignore-duplicates" if ignore_duplicates else "merge-duplicates"
+    payload = _send_json_request(
+        config=config,
+        method="POST",
+        path=f"/{table_name}?{query}",
+        body=rows,
+        extra_headers={"Prefer": f"resolution={resolution},return=representation"},
+    )
+
+    if payload is None:
+        return []
+
+    if not isinstance(payload, list):
+        raise SupabaseApiError("Supabase returned an unexpected insert payload.")
+
+    inserted: list[dict[str, Any]] = []
+    for row in payload:
+        if not isinstance(row, dict):
+            raise SupabaseApiError("Supabase returned an invalid insert row.")
+        inserted.append(row)
+
+    return inserted
+
+
 def read_preference(scope: str, key: str) -> dict[str, Any] | None:
     query = urlencode(
         {
@@ -201,7 +237,7 @@ def _send_json_request(
     config: SupabaseConfig,
     method: str,
     path: str,
-    body: dict[str, Any] | None,
+    body: Any,
     extra_headers: dict[str, str] | None = None,
 ) -> Any:
     request_body = None if body is None else json.dumps(body).encode("utf-8")
